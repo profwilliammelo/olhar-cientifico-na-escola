@@ -1,0 +1,1530 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fluxo Metodológico - Questão → Conceito → Dimensão → Indicador</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .drag-item {
+            transition: all 0.2s ease;
+            cursor: grab;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            touch-action: none;
+        }
+        
+        .drag-item:active {
+            cursor: grabbing;
+            transform: rotate(2deg) scale(1.02);
+        }
+        
+        .drag-item.dragging {
+            opacity: 0.8;
+            transform: rotate(3deg) scale(1.05);
+            z-index: 1000;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+        
+        /* Cores das peças */
+        .piece-questao { background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; }
+        .piece-conceito { background: linear-gradient(135deg, #10b981, #047857); color: white; }
+        .piece-dimensao { background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; }
+        .piece-indicador { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
+        .piece-other { background: linear-gradient(135deg, #6b7280, #4b5563); color: white; }
+        
+        .drop-zone {
+            transition: all 0.3s ease;
+            min-height: 80px;
+            touch-action: none;
+        }
+        
+        .dropped-item-container {
+            touch-action: none;
+        }
+        
+        .drop-zone.drag-over {
+            background-color: #f0f9ff;
+            border-color: #0ea5e9;
+            transform: scale(1.02);
+        }
+        
+        .correct-item {
+            background: linear-gradient(135deg, #22c55e, #16a34a) !important;
+            color: white !important;
+            border: 3px solid #15803d !important;
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.4) !important;
+            transform: scale(1.02) !important;
+        }
+        
+        .incorrect-item {
+            background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+            color: white !important;
+            border: 3px solid #b91c1c !important;
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.4) !important;
+            transform: scale(1.02) !important;
+            animation: shake 0.5s ease-in-out !important;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: scale(1.02) translateX(0); }
+            25% { transform: scale(1.02) translateX(-5px); }
+            75% { transform: scale(1.02) translateX(5px); }
+        }
+        
+        .chart-container {
+            animation: fadeInUp 0.5s ease-out;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .interpretation-panel {
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+
+    <!-- Tela de Início -->
+    <div id="start-screen" class="min-h-screen bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-800 flex items-center justify-center">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
+            <div class="text-center mb-8">
+                <div class="bg-gradient-to-r from-blue-500 to-purple-600 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                    </svg>
+                </div>
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">Olhar Científico na Escola</h1>
+                <p class="text-gray-600">Domine o fluxo: Questão → Conceito → Dimensão → Indicador</p>
+            </div>
+            
+            <div class="space-y-4 mb-6">
+                <div class="flex items-center text-sm text-gray-600">
+                    <svg class="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                    4 cenários desafiadores
+                </div>
+                <div class="flex items-center text-sm text-gray-600">
+                    <svg class="w-5 h-5 text-blue-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" clip-rule="evenodd"></path>
+                    </svg>
+                    Gráficos interativos com dados fictícios
+                </div>
+                <div class="flex items-center text-sm text-gray-600">
+                    <svg class="w-5 h-5 text-purple-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Feedback sonoro e visual
+                </div>
+            </div>
+            
+            <div class="space-y-4 mb-6">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-lg font-semibold text-gray-900">Jogadores</h3>
+                    <button 
+                        id="add-player-btn" 
+                        class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        Adicionar Jogador
+                    </button>
+                </div>
+                
+                <div id="players-list" class="space-y-3 max-h-60 overflow-y-auto">
+                    <!-- Primeiro jogador (padrão) -->
+                    <div class="player-entry bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <div class="flex gap-3 items-start">
+                            <div class="flex-1">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+                                <input 
+                                    type="text" 
+                                    class="player-name w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                                    placeholder="Digite o nome..."
+                                    maxlength="30"
+                                >
+                            </div>
+                            <div class="flex-1">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Escola</label>
+                                <input 
+                                    type="text" 
+                                    class="player-school w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                                    placeholder="Digite o nome da escola..."
+                                    maxlength="50"
+                                >
+                            </div>
+                            <button 
+                                class="remove-player-btn mt-6 text-red-600 hover:text-red-800 p-1 rounded transition-colors"
+                                title="Remover jogador"
+                                style="display: none;"
+                            >
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1-1H8a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-xs text-gray-500 text-center">
+                    Adicione quantos jogadores quiser. Cada um poderá jogar individualmente.
+                </div>
+            </div>
+            
+            <button 
+                id="start-game-btn" 
+                class="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105"
+            >
+                🚀 Iniciar Jogo em Grupo
+            </button>
+        </div>
+    </div>
+
+    <!-- Cabeçalho -->
+    <header id="game-header" class="bg-white shadow-sm border-b border-gray-200 hidden">
+        <div class="max-w-7xl mx-auto px-6 py-6">
+            <div class="flex justify-between items-start mb-3">
+                <h1 class="text-2xl font-bold text-gray-900">
+                    Fluxo completo: Questão → Conceito → Dimensão (quando necessária) → Indicador
+                </h1>
+                <div class="text-right">
+                    <div class="text-sm text-gray-500">Jogadores:</div>
+                    <div id="players-display" class="font-semibold text-gray-900 max-w-xs"></div>
+                </div>
+            </div>
+            <p class="text-gray-600 leading-relaxed">
+                Arraste cada peça para a categoria correta. Se o Conceito permitir indicador direto, use "Dimensão não se aplica". 
+                Ao acertar o fluxo, um gráfico com dados fictícios será exibido. Em seguida, clique em "Interpretar" para ver a leitura sugerida.
+            </p>
+        </div>
+    </header>
+
+    <main id="game-main" class="max-w-7xl mx-auto px-6 py-8 hidden">
+        <!-- Indicador do Cenário -->
+        <div class="mb-8">
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div class="flex justify-between items-start mb-2">
+                    <h2 class="font-semibold text-blue-900">Cenário <span id="scenario-number">1</span> de 4</h2>
+                    <div class="text-sm text-blue-700 font-medium">
+                        Cenários concluídos: <span id="completed-count">0</span>/4
+                    </div>
+                </div>
+                <p id="scenario-question" class="text-blue-800"></p>
+            </div>
+        </div>
+
+        <!-- Área de Jogo -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <!-- Cartões-alvo -->
+            <div class="space-y-4">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Categorias do Fluxo</h3>
+                
+                <div class="drop-zone bg-white border-2 border-dashed border-gray-300 rounded-lg p-4" 
+                     data-category="questao" 
+                     role="region" 
+                     aria-label="Área para Questão"
+                     tabindex="0">
+                    <div class="text-sm font-medium text-gray-500 mb-2">QUESTÃO</div>
+                    <div class="dropped-item-container min-h-12"></div>
+                </div>
+
+                <div class="drop-zone bg-white border-2 border-dashed border-gray-300 rounded-lg p-4" 
+                     data-category="conceito"
+                     role="region" 
+                     aria-label="Área para Conceito"
+                     tabindex="0">
+                    <div class="text-sm font-medium text-gray-500 mb-2">CONCEITO</div>
+                    <div class="dropped-item-container min-h-12"></div>
+                </div>
+
+                <div class="drop-zone bg-white border-2 border-dashed border-gray-300 rounded-lg p-4" 
+                     data-category="dimensao"
+                     role="region" 
+                     aria-label="Área para Dimensão"
+                     tabindex="0">
+                    <div class="text-sm font-medium text-gray-500 mb-2">DIMENSÃO</div>
+                    <div class="dropped-item-container min-h-12"></div>
+                </div>
+
+                <div class="drop-zone bg-white border-2 border-dashed border-gray-300 rounded-lg p-4" 
+                     data-category="indicador"
+                     role="region" 
+                     aria-label="Área para Indicador"
+                     tabindex="0">
+                    <div class="text-sm font-medium text-gray-500 mb-2">INDICADOR</div>
+                    <div class="dropped-item-container min-h-12"></div>
+                </div>
+            </div>
+
+            <!-- Banco de Peças -->
+            <div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Peças Disponíveis</h3>
+                <div id="pieces-bank" class="grid grid-cols-1 gap-3">
+                    <!-- Peças serão inseridas aqui dinamicamente -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Área de Mensagens -->
+        <div id="message-area" class="mb-6 hidden">
+            <div id="success-message" class="bg-green-50 border border-green-200 rounded-lg p-4 hidden">
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span class="text-green-800 font-medium">Fluxo correto! Veja o gráfico e clique em 'Interpretar'.</span>
+                </div>
+            </div>
+            <div id="error-message" class="bg-amber-50 border border-amber-200 rounded-lg p-4 hidden">
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 text-amber-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span class="text-amber-800 font-medium">Revise as peças destacadas.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Área do Gráfico -->
+        <div id="chart-section" class="hidden mb-8">
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <canvas id="result-chart" width="800" height="400"></canvas>
+            </div>
+        </div>
+
+        <!-- Painel de Interpretação -->
+        <div id="interpretation-panel" class="hidden fixed inset-y-0 right-0 w-96 bg-white shadow-xl border-l border-gray-200 z-50">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Interpretação dos Dados</h3>
+                    <button id="close-interpretation" class="text-gray-400 hover:text-gray-600" aria-label="Fechar interpretação">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div id="interpretation-content" class="text-gray-700 leading-relaxed"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Rodapé com Botões -->
+    <footer class="bg-white border-t border-gray-200 px-4 py-3 fixed bottom-0 left-0 right-0 z-40">
+        <div class="max-w-7xl mx-auto">
+            <!-- Layout responsivo: grid em mobile, flex em desktop -->
+            <div class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3 sm:justify-between sm:items-center mb-2">
+                <!-- Primeira linha em mobile: Verificar e Reiniciar -->
+                <button id="verify-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-medium transition-colors text-sm sm:px-4">
+                    Verificar
+                </button>
+                <button id="reset-btn" class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg font-medium transition-colors text-sm sm:px-4">
+                    Reiniciar
+                </button>
+                
+                <!-- Segunda linha em mobile: Anterior e Pular -->
+                <button id="previous-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg font-medium transition-colors text-sm sm:px-4 hidden">
+                    ← Anterior
+                </button>
+                <button id="skip-btn" class="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-2 rounded-lg font-medium transition-colors text-sm sm:px-4">
+                    Pular
+                </button>
+                
+                <!-- Terceira linha em mobile: Próximo e Finalizar -->
+                <button id="next-btn" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg font-medium transition-colors text-sm sm:px-4 hidden">
+                    Próximo →
+                </button>
+                <button id="finish-btn" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg font-medium transition-colors text-sm sm:px-4">
+                    Finalizar
+                </button>
+                
+                <!-- Botão Interpretar - span completo em mobile -->
+                <button id="interpret-btn" class="col-span-2 sm:col-span-1 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg font-medium transition-colors text-sm sm:px-4 hidden disabled:opacity-50 disabled:cursor-not-allowed">
+                    📊 Interpretar Dados
+                </button>
+            </div>
+            <div class="text-center text-xs text-gray-500">
+                Todos os gráficos utilizam dados fictícios para fins didáticos.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Tela de Resumo Final -->
+    <div id="summary-screen" class="min-h-screen bg-gradient-to-br from-green-600 via-blue-600 to-purple-700 py-8 hidden">
+        <div class="max-w-6xl mx-auto px-6">
+            <div class="bg-white rounded-2xl shadow-2xl p-8">
+                <div class="text-center mb-8">
+                    <div class="bg-gradient-to-r from-green-500 to-blue-600 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <h1 class="text-3xl font-bold text-gray-900 mb-2">🎉 Parabéns, equipe!</h1>
+                    <p class="text-gray-600">Vocês completaram o treinamento metodológico</p>
+                    <div id="summary-players-list" class="mt-3 text-sm text-gray-600"></div>
+                </div>
+
+                <div id="scenarios-summary" class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <!-- Cenários serão inseridos dinamicamente -->
+                </div>
+
+                <div class="text-center space-y-4">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                        <h3 class="font-semibold text-blue-900 mb-2">Principais Aprendizados</h3>
+                        <ul class="text-blue-800 text-sm space-y-2">
+                            <li>✓ Domínio do fluxo metodológico: Questão → Conceito → Dimensão → Indicador</li>
+                            <li>✓ Identificação correta de quando usar "Dimensão não se aplica"</li>
+                            <li>✓ Interpretação de dados para tomada de decisão pedagógica</li>
+                            <li>✓ Análise de desigualdades e gradientes no contexto escolar</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="flex gap-4 justify-center flex-wrap">
+                        <button id="back-to-game-btn" class="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200">
+                            ← Voltar ao Jogo
+                        </button>
+                        <button id="restart-game-btn" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200">
+                            🔄 Jogar Novamente
+                        </button>
+                        <button id="new-player-btn" class="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200">
+                            👤 Novo Jogador
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Rodapé com Créditos -->
+                <footer class="mt-8 pt-6 border-t border-gray-200 text-center text-sm text-gray-600">
+                    <p>
+                        Projeto por <strong>Dr. William Melo</strong> | Educação com Evidências
+                    </p>
+                    <p class="mt-1">
+                        <a href="https://instagram.com/profwilliammelo" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 transition-colors">
+                            📱 @profwilliammelo
+                        </a>
+                    </p>
+                </footer>
+            </div>
+        </div>
+    </div>
+
+    <!-- Espaçamento para rodapé fixo -->
+    <div class="h-24"></div>
+
+    <script>
+        // Dados dos cenários
+        const scenarios = [
+            {
+                question: "Em nossa escola, meninas e meninos têm o mesmo desempenho em Matemática no 7º ano?",
+                correct: {
+                    questao: "Em nossa escola, meninas e meninos têm o mesmo desempenho em Matemática no 7º ano?",
+                    conceito: "Desigualdade de desempenho por gênero",
+                    dimensao: "Disciplina Matemática",
+                    indicador: "Diferença de médias de proficiência em Matemática por gênero, apresentada por turma do 7º ano"
+                },
+                pieces: [
+                    "Percentual de estudantes por faixa de nota em todas as disciplinas",
+                    "Em nossa escola, meninas e meninos têm o mesmo desempenho em Matemática no 7º ano?",
+                    "Desempenho acadêmico geral",
+                    "Disciplina Matemática",
+                    "Qual é o nível de satisfação dos estudantes com a escola?",
+                    "Diferença de médias de proficiência em Matemática por gênero, apresentada por turma do 7º ano",
+                    "Dimensão não se aplica (indicador direto)",
+                    "Desigualdade de desempenho por gênero"
+                ],
+                chartData: {
+                    title: "Gênero e Matemática no 7º ano — Dados fictícios",
+                    type: "bar",
+                    data: {
+                        labels: ['7A', '7B', '7C'],
+                        datasets: [
+                            {
+                                label: 'Meninas',
+                                data: [238, 236, 241],
+                                backgroundColor: '#ec4899'
+                            },
+                            {
+                                label: 'Meninos',
+                                data: [231, 234, 237],
+                                backgroundColor: '#3b82f6'
+                            }
+                        ]
+                    }
+                },
+                interpretation: "Gaps pequenos a moderados; observar práticas e apoiar segmentos com menor média."
+            },
+            {
+                question: "Nas turmas do 8º ano da nossa escola, a taxa de alunos com situação final de ano como abandono difere entre estudantes Brancos, Pretos e Pardos?",
+                correct: {
+                    questao: "Nas turmas do 8º ano da nossa escola, a taxa de alunos com situação final de ano como abandono difere entre estudantes Brancos, Pretos e Pardos?",
+                    conceito: "Desigualdade de permanência na escola por raça/cor",
+                    dimensao: "Dimensão não se aplica (indicador direto)",
+                    indicador: "Taxa de abandono por raça/cor em cada turma do 8º ano"
+                },
+                pieces: [
+                    "Desigualdade de permanência na escola por raça/cor",
+                    "Taxa de abandono por raça/cor em cada turma do 8º ano",
+                    "Nas turmas do 8º ano da nossa escola, a taxa de alunos com situação final de ano como abandono difere entre estudantes Brancos, Pretos e Pardos?",
+                    "Média de dias letivos frequentados por estudante",
+                    "Dimensão não se aplica (indicador direto)",
+                    "Participação escolar",
+                    "Como está a frequência dos estudantes na escola?",
+                    "Situação final de ano letivo"
+                ],
+                chartData: {
+                    title: "Abandono por raça/cor no 8º ano — Dados fictícios",
+                    type: "bar",
+                    data: {
+                        labels: ['8A', '8B'],
+                        datasets: [
+                            {
+                                label: 'Branca',
+                                data: [2.8, 3.0],
+                                backgroundColor: '#10b981'
+                            },
+                            {
+                                label: 'Preta',
+                                data: [4.5, 4.9],
+                                backgroundColor: '#f59e0b'
+                            },
+                            {
+                                label: 'Parda',
+                                data: [4.0, 4.2],
+                                backgroundColor: '#ef4444'
+                            }
+                        ]
+                    }
+                },
+                interpretation: "Taxas mais altas em Preta e Parda; organizar estratégias de permanência por turma."
+            },
+            {
+                question: "Na nossa escola, turmas com nível socioeconômico médio mais alto têm maior proficiência em Matemática?",
+                correct: {
+                    questao: "Na nossa escola, turmas com nível socioeconômico médio mais alto têm maior proficiência em Matemática?",
+                    conceito: "Gradiente socioeconômico do aprendizado entre turmas",
+                    dimensao: "Disciplina Matemática",
+                    indicador: "Média de proficiência por turma, ordenada pelo nível socioeconômico médio da turma"
+                },
+                pieces: [
+                    "Correlação entre renda familiar e notas individuais dos estudantes",
+                    "Disciplina Matemática",
+                    "Qual é o impacto da renda familiar no desempenho dos estudantes?",
+                    "Na nossa escola, turmas com nível socioeconômico médio mais alto têm maior proficiência em Matemática?",
+                    "Influência socioeconômica no aprendizado",
+                    "Média de proficiência por turma, ordenada pelo nível socioeconômico médio da turma",
+                    "Dimensão não se aplica (indicador direto)",
+                    "Gradiente socioeconômico do aprendizado entre turmas"
+                ],
+                chartData: {
+                    title: "Nível socioeconômico médio da turma e proficiência — Dados fictícios",
+                    type: "bar",
+                    data: {
+                        labels: ['9A (baixo)', '9B (médio)', '9C (médio-alto)', '9D (alto)'],
+                        datasets: [
+                            {
+                                label: 'Proficiência Média',
+                                data: [221, 232, 239, 246],
+                                backgroundColor: '#6366f1'
+                            }
+                        ]
+                    }
+                },
+                interpretation: "Gradiente claro; reforço estruturado nas turmas com menor média e alocação progressiva de recursos."
+            },
+            {
+                question: "Na turma 6B da nossa escola, estudantes com mais problemas emocionais têm menor proficiência?",
+                correct: {
+                    questao: "Na turma 6B da nossa escola, estudantes com mais problemas emocionais têm menor proficiência?",
+                    conceito: "Relação entre bem-estar socioemocional e aprendizagem na mesma turma",
+                    dimensao: "Subescala emocional do SDQ",
+                    indicador: "Média de proficiência por faixa de problemas emocionais na turma 6B"
+                },
+                pieces: [
+                    "Ambiente escolar e aprendizagem",
+                    "Média de proficiência por faixa de problemas emocionais na turma 6B",
+                    "Bem-estar socioemocional",
+                    "Na turma 6B da nossa escola, estudantes com mais problemas emocionais têm menor proficiência?",
+                    "Percentual de estudantes satisfeitos com o ambiente escolar por turma",
+                    "Subescala emocional do SDQ",
+                    "Como está o clima escolar na nossa instituição?",
+                    "Relação entre bem-estar socioemocional e aprendizagem na mesma turma"
+                ],
+                chartData: {
+                    title: "Problemas emocionais e desempenho na turma 6B — Dados fictícios",
+                    type: "bar",
+                    data: {
+                        labels: ['Poucos problemas', 'Problemas moderados', 'Muitos problemas'],
+                        datasets: [
+                            {
+                                label: 'Proficiência Média',
+                                data: [244, 236, 226],
+                                backgroundColor: '#10b981'
+                            }
+                        ]
+                    }
+                },
+                interpretation: "Relação inversa confirmada; integrar apoio socioemocional com pedagógico na turma 6B."
+            }
+        ];
+
+        let currentScenario = 0;
+        let draggedElement = null;
+        let chartInstance = null;
+        let completedScenarios = 0;
+        let players = [];
+
+
+        // Sons de feedback
+        function playSuccessSound() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime); // C5
+            oscillator.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.1); // E5
+            oscillator.frequency.setValueAtTime(783.99, audioContext.currentTime + 0.2); // G5
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.5);
+        }
+
+        function playErrorSound() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(220, audioContext.currentTime); // A3
+            oscillator.frequency.setValueAtTime(196, audioContext.currentTime + 0.15); // G3
+            
+            gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.3);
+        }
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            setupEventListeners();
+            setupPlayerManagement();
+            
+            // Event listener para iniciar jogo
+            document.getElementById('start-game-btn').addEventListener('click', startGame);
+        });
+
+        function setupPlayerManagement() {
+            // Adicionar event listener para adicionar jogador
+            document.getElementById('add-player-btn').addEventListener('click', addPlayerEntry);
+            
+            // Configurar remoção para o primeiro jogador (inicialmente oculto)
+            updateRemoveButtons();
+        }
+
+        function addPlayerEntry() {
+            const playersList = document.getElementById('players-list');
+            const playerEntry = document.createElement('div');
+            playerEntry.className = 'player-entry bg-gray-50 rounded-lg p-4 border border-gray-200';
+            
+            playerEntry.innerHTML = `
+                <div class="flex gap-3 items-start">
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+                        <input 
+                            type="text" 
+                            class="player-name w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                            placeholder="Digite o nome..."
+                            maxlength="30"
+                        >
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Escola</label>
+                        <input 
+                            type="text" 
+                            class="player-school w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                            placeholder="Digite o nome da escola..."
+                            maxlength="50"
+                        >
+                    </div>
+                    <button 
+                        class="remove-player-btn mt-6 text-red-600 hover:text-red-800 p-1 rounded transition-colors"
+                        title="Remover jogador"
+                    >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1-1H8a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                    </button>
+                </div>
+            `;
+            
+            playersList.appendChild(playerEntry);
+            
+            // Adicionar event listener para remoção
+            playerEntry.querySelector('.remove-player-btn').addEventListener('click', function() {
+                playerEntry.remove();
+                updateRemoveButtons();
+            });
+            
+            updateRemoveButtons();
+            
+            // Focar no campo nome do novo jogador
+            playerEntry.querySelector('.player-name').focus();
+        }
+
+        function updateRemoveButtons() {
+            const entries = document.querySelectorAll('.player-entry');
+            entries.forEach((entry, index) => {
+                const removeBtn = entry.querySelector('.remove-player-btn');
+                if (entries.length > 1) {
+                    removeBtn.style.display = 'block';
+                } else {
+                    removeBtn.style.display = 'none';
+                }
+            });
+        }
+
+        function startGame() {
+            // Coletar jogadores válidos
+            players = [];
+            const playerEntries = document.querySelectorAll('.player-entry');
+            let hasError = false;
+            
+            playerEntries.forEach((entry, index) => {
+                const nameInput = entry.querySelector('.player-name');
+                const schoolInput = entry.querySelector('.player-school');
+                const name = nameInput.value.trim();
+                const school = schoolInput.value.trim();
+                
+                // Resetar estilos de erro
+                nameInput.classList.remove('border-red-500');
+                schoolInput.classList.remove('border-red-500');
+                
+                if (name && school) {
+                    players.push({ name, school });
+                } else {
+                    hasError = true;
+                    if (!name) nameInput.classList.add('border-red-500');
+                    if (!school) schoolInput.classList.add('border-red-500');
+                }
+            });
+            
+            if (hasError || players.length === 0) {
+                // Remover estilos de erro após 2 segundos
+                setTimeout(() => {
+                    document.querySelectorAll('.border-red-500').forEach(el => {
+                        el.classList.remove('border-red-500');
+                    });
+                }, 2000);
+                return;
+            }
+            
+            // Iniciar jogo diretamente
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('game-header').classList.remove('hidden');
+            document.getElementById('game-main').classList.remove('hidden');
+            
+            // Mostrar todos os jogadores no cabeçalho
+            displayAllPlayers();
+            
+            // Inicializar primeiro cenário
+            loadScenario(currentScenario);
+        }
+
+        function displayAllPlayers() {
+            const playersDisplay = document.getElementById('players-display');
+            
+            if (players.length === 1) {
+                playersDisplay.innerHTML = `
+                    <div class="font-semibold">${players[0].name}</div>
+                    <div class="text-sm text-gray-600">${players[0].school}</div>
+                `;
+            } else {
+                // Agrupar por escola
+                const schoolGroups = {};
+                players.forEach(player => {
+                    if (!schoolGroups[player.school]) {
+                        schoolGroups[player.school] = [];
+                    }
+                    schoolGroups[player.school].push(player.name);
+                });
+                
+                let displayHTML = '';
+                Object.keys(schoolGroups).forEach(school => {
+                    displayHTML += `
+                        <div class="mb-2">
+                            <div class="text-sm text-gray-600">${school}:</div>
+                            <div class="font-medium">${schoolGroups[school].join(', ')}</div>
+                        </div>
+                    `;
+                });
+                
+                playersDisplay.innerHTML = displayHTML;
+            }
+        }
+
+        function loadScenario(index) {
+            const scenario = scenarios[index];
+            document.getElementById('scenario-number').textContent = index + 1;
+            document.getElementById('scenario-question').textContent = scenario.question;
+            
+            // Limpar áreas
+            clearDropZones();
+            hideChart();
+            hideInterpretation();
+            hideMessages();
+            
+            // Carregar peças
+            loadPieces(scenario.pieces);
+            
+            // Resetar botões
+            document.getElementById('next-btn').classList.add('hidden');
+            document.getElementById('interpret-btn').classList.add('hidden');
+            document.getElementById('interpret-btn').disabled = true;
+            
+            // Controlar visibilidade do botão anterior
+            if (index > 0) {
+                document.getElementById('previous-btn').classList.remove('hidden');
+            } else {
+                document.getElementById('previous-btn').classList.add('hidden');
+            }
+        }
+
+        function loadPieces(pieces) {
+            const bank = document.getElementById('pieces-bank');
+            bank.innerHTML = '';
+            
+            pieces.forEach((piece, index) => {
+                const pieceElement = document.createElement('div');
+                
+                // Determinar cor da peça baseada no conteúdo
+                let colorClass = 'piece-other';
+                const scenario = scenarios[currentScenario];
+                
+                if (piece === scenario.correct.questao) {
+                    colorClass = 'piece-questao';
+                } else if (piece === scenario.correct.conceito) {
+                    colorClass = 'piece-conceito';
+                } else if (piece === scenario.correct.dimensao) {
+                    colorClass = 'piece-dimensao';
+                } else if (piece === scenario.correct.indicador) {
+                    colorClass = 'piece-indicador';
+                }
+                
+                pieceElement.className = `drag-item ${colorClass} rounded-lg p-3 shadow-sm hover:shadow-md border-0`;
+                pieceElement.textContent = piece;
+                pieceElement.setAttribute('data-piece', piece);
+                pieceElement.setAttribute('role', 'button');
+                pieceElement.setAttribute('aria-label', `Peça: ${piece}`);
+                pieceElement.setAttribute('tabindex', '0');
+                
+                // Configurar eventos baseado no tipo de dispositivo
+                if (isTouchDevice) {
+                    // Desativar HTML5 drag em dispositivos touch
+                    pieceElement.draggable = false;
+                    
+                    // Event listeners para touch
+                    pieceElement.addEventListener('touchstart', handleTouchStart, { passive: false });
+                    pieceElement.addEventListener('touchmove', handleTouchMove, { passive: false });
+                    pieceElement.addEventListener('touchend', handleTouchEnd, { passive: false });
+                } else {
+                    // Manter HTML5 drag para desktop
+                    pieceElement.draggable = true;
+                    
+                    // Event listeners para drag and drop
+                    pieceElement.addEventListener('dragstart', handleDragStart);
+                    pieceElement.addEventListener('dragend', handleDragEnd);
+                }
+                
+                // Acessibilidade por teclado
+                pieceElement.addEventListener('keydown', handleKeyDown);
+                
+                bank.appendChild(pieceElement);
+            });
+        }
+
+        function setupEventListeners() {
+            // Drop zones
+            document.querySelectorAll('.drop-zone').forEach(zone => {
+                zone.addEventListener('dragover', handleDragOver);
+                zone.addEventListener('drop', handleDrop);
+                zone.addEventListener('dragenter', handleDragEnter);
+                zone.addEventListener('dragleave', handleDragLeave);
+            });
+
+            // Botões
+            document.getElementById('verify-btn').addEventListener('click', verifyAnswer);
+            document.getElementById('reset-btn').addEventListener('click', resetScenario);
+            document.getElementById('skip-btn').addEventListener('click', skipScenario);
+            document.getElementById('finish-btn').addEventListener('click', finishGame);
+            document.getElementById('previous-btn').addEventListener('click', previousScenario);
+            document.getElementById('next-btn').addEventListener('click', nextScenario);
+            document.getElementById('interpret-btn').addEventListener('click', showInterpretation);
+            document.getElementById('close-interpretation').addEventListener('click', hideInterpretation);
+            
+            // Botões da tela de resumo
+            document.getElementById('back-to-game-btn').addEventListener('click', backToGame);
+            document.getElementById('restart-game-btn').addEventListener('click', restartGame);
+            document.getElementById('new-player-btn').addEventListener('click', newPlayer);
+        }
+
+        function handleDragStart(e) {
+            draggedElement = e.target;
+            e.target.style.opacity = '0.5';
+        }
+
+        function handleDragEnd(e) {
+            e.target.style.opacity = '1';
+            draggedElement = null;
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+        }
+
+        function handleDragEnter(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('drag-over');
+        }
+
+        function handleDragLeave(e) {
+            e.currentTarget.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+            
+            if (draggedElement) {
+                const container = e.currentTarget.querySelector('.dropped-item-container');
+                
+                // Remover item anterior se existir
+                if (container.firstChild) {
+                    const previousItem = container.firstChild;
+                    document.getElementById('pieces-bank').appendChild(previousItem);
+                }
+                
+                // Adicionar novo item
+                container.appendChild(draggedElement);
+                
+                // Remover classes de feedback
+                draggedElement.classList.remove('correct-item', 'incorrect-item');
+            }
+        }
+
+        function handleKeyDown(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                // Implementar lógica de seleção por teclado se necessário
+            }
+        }
+
+        // Detectar dispositivos touch
+        const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+        
+        // Variáveis para touch
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchElement = null;
+        let ghostElement = null;
+        let currentDropZone = null;
+        let touchMoved = false;
+        let touchOffsetX = 0;
+        let touchOffsetY = 0;
+
+        function getDropZoneFromPoint(x, y) {
+            // Esconder ghost temporariamente
+            if (ghostElement) {
+                ghostElement.style.display = 'none';
+            }
+            
+            // Tentar elementFromPoint primeiro
+            const elementBelow = document.elementFromPoint(x, y);
+            let dropZone = null;
+            
+            if (elementBelow) {
+                dropZone = elementBelow.closest('.drop-zone');
+                if (!dropZone) {
+                    // Verificar se é um container interno
+                    const container = elementBelow.closest('.dropped-item-container');
+                    if (container) {
+                        dropZone = container.closest('.drop-zone');
+                    }
+                }
+            }
+            
+            // Fallback: verificar bounding boxes com tolerância
+            if (!dropZone) {
+                const dropZones = document.querySelectorAll('.drop-zone');
+                const tolerance = 20;
+                
+                for (const zone of dropZones) {
+                    const rect = zone.getBoundingClientRect();
+                    if (x >= rect.left - tolerance && 
+                        x <= rect.right + tolerance && 
+                        y >= rect.top - tolerance && 
+                        y <= rect.bottom + tolerance) {
+                        dropZone = zone;
+                        break;
+                    }
+                }
+            }
+            
+            // Restaurar ghost
+            if (ghostElement) {
+                ghostElement.style.display = 'block';
+            }
+            
+            return dropZone;
+        }
+
+        function handleTouchStart(e) {
+            e.preventDefault(); // Bloquear gestos nativos imediatamente
+            
+            const touch = e.touches[0];
+            touchElement = e.target;
+            touchStartX = touch.clientX;
+            touchStartY = touch.clientY;
+            touchMoved = false;
+            
+            // Calcular offset do toque em relação ao elemento
+            const rect = touchElement.getBoundingClientRect();
+            touchOffsetX = touch.clientX - rect.left;
+            touchOffsetY = touch.clientY - rect.top;
+            
+            // Adicionar classe de arrastar
+            touchElement.classList.add('dragging');
+        }
+
+        function handleTouchMove(e) {
+            if (!touchElement) return;
+            e.preventDefault(); // Bloquear scroll/zoom
+            
+            const touch = e.touches[0];
+            const deltaX = Math.abs(touch.clientX - touchStartX);
+            const deltaY = Math.abs(touch.clientY - touchStartY);
+            
+            // Só considera movimento se passou do threshold
+            if (deltaX > 10 || deltaY > 10) {
+                touchMoved = true;
+                
+                // Criar ghost se não existir
+                if (!ghostElement) {
+                    createGhostElement(touchElement);
+                }
+                
+                // Mover ghost usando offset correto
+                ghostElement.style.left = (touch.clientX - touchOffsetX) + 'px';
+                ghostElement.style.top = (touch.clientY - touchOffsetY) + 'px';
+                
+                // Encontrar zona de drop
+                const dropZone = getDropZoneFromPoint(touch.clientX, touch.clientY);
+                
+                // Atualizar highlight
+                if (currentDropZone && currentDropZone !== dropZone) {
+                    currentDropZone.classList.remove('drag-over');
+                }
+                
+                if (dropZone && dropZone !== currentDropZone) {
+                    dropZone.classList.add('drag-over');
+                }
+                
+                currentDropZone = dropZone;
+            }
+        }
+
+        function handleTouchEnd(e) {
+            if (!touchElement) return;
+            e.preventDefault();
+            
+            const touch = e.changedTouches[0];
+            
+            // Remover classes de arrastar
+            touchElement.classList.remove('dragging');
+            
+            // Determinar zona final
+            let finalDropZone = currentDropZone;
+            if (!finalDropZone && touchMoved) {
+                finalDropZone = getDropZoneFromPoint(touch.clientX, touch.clientY);
+            }
+            
+            // Remover highlight
+            if (currentDropZone) {
+                currentDropZone.classList.remove('drag-over');
+            }
+            
+            // Efetuar drop se houver zona válida
+            if (finalDropZone && touchMoved) {
+                const container = finalDropZone.querySelector('.dropped-item-container');
+                
+                // Remover item anterior se existir
+                if (container.firstChild) {
+                    const previousItem = container.firstChild;
+                    document.getElementById('pieces-bank').appendChild(previousItem);
+                }
+                
+                // Adicionar novo item
+                container.appendChild(touchElement);
+                
+                // Remover classes de feedback
+                touchElement.classList.remove('correct-item', 'incorrect-item');
+                
+                // Feedback visual de confirmação
+                finalDropZone.style.transform = 'scale(1.02)';
+                setTimeout(() => {
+                    finalDropZone.style.transform = '';
+                }, 150);
+            }
+            
+            // Limpar estado
+            cleanupTouchState();
+        }
+
+        function createGhostElement(element) {
+            ghostElement = element.cloneNode(true);
+            const rect = element.getBoundingClientRect();
+            
+            ghostElement.style.position = 'fixed';
+            ghostElement.style.width = rect.width + 'px';
+            ghostElement.style.height = rect.height + 'px';
+            ghostElement.style.pointerEvents = 'none';
+            ghostElement.style.zIndex = '9999';
+            ghostElement.style.opacity = '0.9';
+            ghostElement.style.transform = 'rotate(2deg) scale(1.02)';
+            ghostElement.style.boxShadow = '0 8px 25px rgba(0,0,0,0.3)';
+            ghostElement.style.borderRadius = '8px';
+            
+            document.body.appendChild(ghostElement);
+        }
+
+        function cleanupTouchState() {
+            if (ghostElement) {
+                ghostElement.remove();
+                ghostElement = null;
+            }
+            
+            touchElement = null;
+            currentDropZone = null;
+            touchMoved = false;
+            touchOffsetX = 0;
+            touchOffsetY = 0;
+        }
+
+        function verifyAnswer() {
+            const scenario = scenarios[currentScenario];
+            const dropZones = document.querySelectorAll('.drop-zone');
+            let allCorrect = true;
+            
+            // Esconder mensagens anteriores
+            hideMessages();
+            
+            dropZones.forEach(zone => {
+                const category = zone.dataset.category;
+                const droppedItem = zone.querySelector('.dropped-item-container').firstChild;
+                
+                if (droppedItem) {
+                    const droppedText = droppedItem.textContent;
+                    const correctText = scenario.correct[category];
+                    
+                    if (droppedText === correctText) {
+                        droppedItem.classList.add('correct-item');
+                        droppedItem.classList.remove('incorrect-item');
+                        droppedItem.removeAttribute('title');
+                    } else {
+                        droppedItem.classList.add('incorrect-item');
+                        droppedItem.classList.remove('correct-item');
+                        
+                        // Encontrar categoria correta para tooltip
+                        let correctCategory = '';
+                        for (let cat in scenario.correct) {
+                            if (scenario.correct[cat] === droppedText) {
+                                correctCategory = cat.charAt(0).toUpperCase() + cat.slice(1);
+                                break;
+                            }
+                        }
+                        
+                        droppedItem.setAttribute('title', `Revise: esta peça descreve a categoria ${correctCategory}`);
+                        allCorrect = false;
+                    }
+                } else {
+                    allCorrect = false;
+                }
+            });
+            
+            if (allCorrect) {
+                playSuccessSound();
+                showSuccessMessage();
+                showChart(scenario.chartData);
+                
+                // Sempre mostrar botão próximo quando acerta
+                document.getElementById('next-btn').classList.remove('hidden');
+                document.getElementById('interpret-btn').classList.remove('hidden');
+                document.getElementById('interpret-btn').disabled = false;
+                
+                // Atualizar contador apenas na primeira vez que acerta
+                if (!scenario.completed) {
+                    completedScenarios++;
+                    scenario.completed = true;
+                    updateCompletedCount();
+                }
+            } else {
+                playErrorSound();
+                showErrorMessage();
+            }
+        }
+
+        function showChart(chartData) {
+            const chartSection = document.getElementById('chart-section');
+            const canvas = document.getElementById('result-chart');
+            
+            // Destruir gráfico anterior se existir
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+            
+            // Configurar gráfico
+            const ctx = canvas.getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: chartData.type,
+                data: chartData.data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: chartData.title,
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            }
+                        },
+                        legend: {
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: chartData.type === 'bar' && scenarios[currentScenario].chartData.data.datasets[0].label.includes('Taxa') ? 'Taxa (%)' : 'Pontuação'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            chartSection.classList.remove('hidden');
+        }
+
+        function hideChart() {
+            document.getElementById('chart-section').classList.add('hidden');
+            if (chartInstance) {
+                chartInstance.destroy();
+                chartInstance = null;
+            }
+        }
+
+        function showInterpretation() {
+            const panel = document.getElementById('interpretation-panel');
+            const content = document.getElementById('interpretation-content');
+            
+            content.textContent = scenarios[currentScenario].interpretation;
+            panel.classList.remove('hidden');
+        }
+
+        function hideInterpretation() {
+            document.getElementById('interpretation-panel').classList.add('hidden');
+        }
+
+        function resetScenario() {
+            loadScenario(currentScenario);
+        }
+
+        function skipScenario() {
+            // Marcar cenário como pulado
+            scenarios[currentScenario].skipped = true;
+            
+            if (currentScenario < scenarios.length - 1) {
+                currentScenario++;
+                loadScenario(currentScenario);
+            } else {
+                showSummaryScreen();
+            }
+        }
+
+        function finishGame() {
+            // Marcar cenários restantes como não respondidos
+            for (let i = currentScenario; i < scenarios.length; i++) {
+                if (!scenarios[i].completed && !scenarios[i].skipped) {
+                    scenarios[i].notAnswered = true;
+                }
+            }
+            showSummaryScreen();
+        }
+
+        function previousScenario() {
+            if (currentScenario > 0) {
+                currentScenario--;
+                loadScenario(currentScenario);
+            }
+        }
+
+        function nextScenario() {
+            if (currentScenario < scenarios.length - 1) {
+                currentScenario++;
+                loadScenario(currentScenario);
+            } else {
+                showSummaryScreen();
+            }
+        }
+
+        function showSuccessMessage() {
+            document.getElementById('message-area').classList.remove('hidden');
+            document.getElementById('success-message').classList.remove('hidden');
+            document.getElementById('error-message').classList.add('hidden');
+        }
+
+        function showErrorMessage() {
+            document.getElementById('message-area').classList.remove('hidden');
+            document.getElementById('error-message').classList.remove('hidden');
+            document.getElementById('success-message').classList.add('hidden');
+        }
+
+        function hideMessages() {
+            document.getElementById('message-area').classList.add('hidden');
+            document.getElementById('success-message').classList.add('hidden');
+            document.getElementById('error-message').classList.add('hidden');
+        }
+
+        function updateCompletedCount() {
+            document.getElementById('completed-count').textContent = completedScenarios;
+        }
+
+        function clearDropZones() {
+            document.querySelectorAll('.dropped-item-container').forEach(container => {
+                while (container.firstChild) {
+                    container.removeChild(container.firstChild);
+                }
+            });
+            
+            // Remover classes de feedback
+            document.querySelectorAll('.drag-item').forEach(item => {
+                item.classList.remove('correct-item', 'incorrect-item');
+                item.removeAttribute('title');
+            });
+        }
+
+        function showSummaryScreen() {
+            // Esconder tela do jogo
+            document.getElementById('game-header').classList.add('hidden');
+            document.getElementById('game-main').classList.add('hidden');
+            
+            // Mostrar tela de resumo
+            document.getElementById('summary-screen').classList.remove('hidden');
+            
+            // Mostrar lista de jogadores no resumo
+            displaySummaryPlayers();
+            
+            // Criar resumo dinâmico dos cenários
+            createScenariosSummary();
+        }
+
+        function displaySummaryPlayers() {
+            const summaryPlayersList = document.getElementById('summary-players-list');
+            
+            if (players.length === 1) {
+                summaryPlayersList.innerHTML = `
+                    <div class="text-center">
+                        <span class="font-medium">${players[0].name}</span> - ${players[0].school}
+                    </div>
+                `;
+            } else {
+                // Agrupar por escola
+                const schoolGroups = {};
+                players.forEach(player => {
+                    if (!schoolGroups[player.school]) {
+                        schoolGroups[player.school] = [];
+                    }
+                    schoolGroups[player.school].push(player.name);
+                });
+                
+                let displayHTML = '<div class="text-center space-y-1">';
+                Object.keys(schoolGroups).forEach(school => {
+                    displayHTML += `
+                        <div>
+                            <span class="font-medium">${schoolGroups[school].join(', ')}</span> - ${school}
+                        </div>
+                    `;
+                });
+                displayHTML += '</div>';
+                
+                summaryPlayersList.innerHTML = displayHTML;
+            }
+        }
+
+        function createScenariosSummary() {
+            const summaryContainer = document.getElementById('scenarios-summary');
+            summaryContainer.innerHTML = '';
+            
+            const scenarioTitles = [
+                "📊 Cenário 1: Desempenho por Gênero",
+                "📈 Cenário 2: Abandono por Raça/Cor", 
+                "💰 Cenário 3: Gradiente Socioeconômico",
+                "💭 Cenário 4: Problemas Emocionais"
+            ];
+            
+            const scenarioDescriptions = [
+                ["Em nossa escola, meninas e meninos têm o mesmo desempenho em Matemática no 7º ano?", "Desigualdade de desempenho por gênero", "Disciplina Matemática", "Diferença de médias por gênero por turma"],
+                ["Nas turmas do 8º ano da nossa escola, a taxa de alunos com situação final de ano como abandono difere entre estudantes Brancos, Pretos e Pardos?", "Desigualdade de permanência na escola por raça/cor", "Não se aplica (indicador direto)", "Taxa de abandono por raça/cor por turma"],
+                ["Na nossa escola, turmas com nível socioeconômico médio mais alto têm maior proficiência em Matemática?", "Gradiente socioeconômico do aprendizado", "Disciplina Matemática", "Média por turma ordenada por NSE médio"],
+                ["Na turma 6B da nossa escola, estudantes com mais problemas emocionais têm menor proficiência?", "Relação bem-estar e aprendizagem", "Subescala emocional do SDQ", "Média por faixa de problemas emocionais"]
+            ];
+            
+            scenarios.forEach((scenario, index) => {
+                const scenarioDiv = document.createElement('div');
+                
+                let statusClass = 'bg-gray-50';
+                let statusBadge = '';
+                
+                if (scenario.completed) {
+                    statusClass = 'bg-green-50 border-green-200';
+                    statusBadge = '<span class="inline-block bg-green-500 text-white text-xs px-2 py-1 rounded-full mb-2">✓ Concluído</span>';
+                } else if (scenario.skipped) {
+                    statusClass = 'bg-yellow-50 border-yellow-200';
+                    statusBadge = '<span class="inline-block bg-yellow-500 text-white text-xs px-2 py-1 rounded-full mb-2">⏭ Pulado</span>';
+                } else if (scenario.notAnswered) {
+                    statusClass = 'bg-gray-100 border-gray-300';
+                    statusBadge = '<span class="inline-block bg-gray-500 text-white text-xs px-2 py-1 rounded-full mb-2">— Não respondido</span>';
+                }
+                
+                scenarioDiv.className = `${statusClass} rounded-lg p-6 border`;
+                
+                const content = scenario.completed ? 
+                    `<div class="space-y-3">
+                        <div class="piece-questao rounded-lg p-3 text-white shadow-sm">
+                            <div class="text-sm font-medium mb-1">QUESTÃO</div>
+                            <div class="text-xs">${scenario.correct.questao}</div>
+                        </div>
+                        <div class="piece-conceito rounded-lg p-3 text-white shadow-sm">
+                            <div class="text-sm font-medium mb-1">CONCEITO</div>
+                            <div class="text-xs">${scenario.correct.conceito}</div>
+                        </div>
+                        <div class="piece-dimensao rounded-lg p-3 text-white shadow-sm">
+                            <div class="text-sm font-medium mb-1">DIMENSÃO</div>
+                            <div class="text-xs">${scenario.correct.dimensao}</div>
+                        </div>
+                        <div class="piece-indicador rounded-lg p-3 text-white shadow-sm">
+                            <div class="text-sm font-medium mb-1">INDICADOR</div>
+                            <div class="text-xs">${scenario.correct.indicador}</div>
+                        </div>
+                    </div>` :
+                    `<div class="text-center py-8">
+                        <div class="text-gray-500 text-sm">Cenário não foi completado</div>
+                        <div class="text-xs text-gray-400 mt-1">O fluxo metodológico não foi construído</div>
+                    </div>`;
+                
+                scenarioDiv.innerHTML = `
+                    ${statusBadge}
+                    <h3 class="font-semibold text-gray-900 mb-4">${scenarioTitles[index]}</h3>
+                    ${content}
+                `;
+                
+                summaryContainer.appendChild(scenarioDiv);
+            });
+        }
+
+        function backToGame() {
+            // Esconder tela de resumo
+            document.getElementById('summary-screen').classList.add('hidden');
+            
+            // Mostrar tela do jogo
+            document.getElementById('game-header').classList.remove('hidden');
+            document.getElementById('game-main').classList.remove('hidden');
+            
+            // Voltar para o último cenário (ou último disponível)
+            if (currentScenario >= scenarios.length) {
+                currentScenario = scenarios.length - 1;
+            }
+            loadScenario(currentScenario);
+        }
+
+        function restartGame() {
+            // Resetar variáveis
+            currentScenario = 0;
+            completedScenarios = 0;
+            scenarios.forEach(scenario => {
+                scenario.completed = false;
+                scenario.skipped = false;
+                scenario.notAnswered = false;
+            });
+            
+            // Esconder tela de resumo
+            document.getElementById('summary-screen').classList.add('hidden');
+            
+            // Mostrar tela do jogo
+            document.getElementById('game-header').classList.remove('hidden');
+            document.getElementById('game-main').classList.remove('hidden');
+            
+            // Carregar primeiro cenário
+            loadScenario(currentScenario);
+        }
+
+        function newPlayer() {
+            // Resetar tudo
+            currentScenario = 0;
+            completedScenarios = 0;
+            players = [];
+            scenarios.forEach(scenario => {
+                scenario.completed = false;
+                scenario.skipped = false;
+                scenario.notAnswered = false;
+            });
+            
+            // Esconder tela de resumo
+            document.getElementById('summary-screen').classList.add('hidden');
+            
+            // Mostrar tela inicial
+            document.getElementById('start-screen').classList.remove('hidden');
+        }
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9828df6b32bee154',t:'MTc1ODQ1MDQ3NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
